@@ -4,13 +4,13 @@
         "name": "Sthree Sakhthi Today Results",
         "prizes": {
             "1st Prize": {
-                "amount": "\u20b910000000 (1 Crore)",
+                "amount": "₹10000000 (1 Crore)",
                 "numbers": [
                     "SE 974999 (ERNAKULAM)"
                 ]
             },
             "Cons Prize": {
-                "amount": "\u20b95000",
+                "amount": "₹5000",
                 "numbers": [
                     "SA 974999",
                     "SB 974999",
@@ -26,19 +26,19 @@
                 ]
             },
             "2nd Prize": {
-                "amount": "\u20b93000000 (30 Lakh)",
+                "amount": "₹3000000 (30 Lakh)",
                 "numbers": [
                     "SL 541135 (KOLLAM)"
                 ]
             },
             "3rd Prize": {
-                "amount": "\u20b9500000 (5 Lakh)",
+                "amount": "₹500000 (5 Lakh)",
                 "numbers": [
                     "SK 838192 (KOTTAYAM)"
                 ]
             },
             "4th Prize": {
-                "amount": "\u20b95000",
+                "amount": "₹5000",
                 "numbers": [
                     "1238",
                     "1800",
@@ -62,7 +62,7 @@
                 ]
             },
             "5th Prize": {
-                "amount": "\u20b92000",
+                "amount": "₹2000",
                 "numbers": [
                     "7096",
                     "7902",
@@ -73,7 +73,7 @@
                 ]
             },
             "6th Prize": {
-                "amount": "\u20b91000",
+                "amount": "₹1000",
                 "numbers": [
                     "0725",
                     "0739",
@@ -103,7 +103,7 @@
                 ]
             },
             "7th Prize": {
-                "amount": "\u20b9500",
+                "amount": "₹500",
                 "numbers": [
                     "0372",
                     "0694",
@@ -184,7 +184,7 @@
                 ]
             },
             "8th Prize": {
-                "amount": "\u20b9200",
+                "amount": "₹200",
                 "numbers": [
                     "0265",
                     "0290",
@@ -279,7 +279,7 @@
                 ]
             },
             "9th Prize": {
-                "amount": "\u20b9100",
+                "amount": "₹100",
                 "numbers": [
                     "0095",
                     "0116",
