@@ -1,0 +1,26 @@
+name: Auto Scraper
+
+on:
+  schedule:
+    # 09:30 UTC is 15:00 IST (3:00 PM)
+    - cron: '30 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      - name: Run Scraper
+        run: python scraper.py
