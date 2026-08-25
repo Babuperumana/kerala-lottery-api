@@ -121,8 +121,7 @@ def scrape_full_homepage():
         return {
             "date": date_text,
             "name": name,
-            "prizes": prizes,
-            "link": url
+            "prizes": prizes
         }, is_finished
     except Exception as e:
         print(f"Error scraping homepage: {e}")
