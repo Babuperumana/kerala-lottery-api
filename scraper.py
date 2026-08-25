@@ -157,8 +157,8 @@ def update_results():
     # Keep only the last 7 days
     existing = existing[:7]
     
-    with open(FILE_NAME, 'w') as f:
-        json.dump(existing, f, indent=4)
+    with open(FILE_NAME, 'w', encoding='utf-8') as f:
+        json.dump(existing, f, indent=4, ensure_ascii=False)
         
     print(f"[{get_ist_now()}] Update complete. {len(existing)} results saved.")
     push_to_github()
