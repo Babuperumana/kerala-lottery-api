@@ -9,7 +9,8 @@ import os
 import pytz
 import sys
 
-FILE_NAME = "result.json"
+FILE_SINGLE = "result.json"
+FILE_HISTORY = "results.json"
 
 is_finished_today = False
 last_run_date = None
@@ -39,9 +40,9 @@ def push_to_github():
     # GitHub Actions specific commands
     os.system('git config --global user.name "github-actions[bot]"')
     os.system('git config --global user.email "github-actions[bot]@users.noreply.github.com"')
-    os.system('git add result.json')
+    os.system('git add result.json results.json')
     if os.system('git diff --staged --quiet') != 0:
-        os.system('git commit -m "Auto update result.json"')
+        os.system('git commit -m "Auto update results"')
         os.system('git push')
     else:
         print("No changes to commit.")
@@ -134,33 +135,40 @@ def update_results():
         print(f"[{get_ist_now()}] Could not fetch homepage results.")
         return False
         
-    existing = []
-    if os.path.exists(FILE_NAME):
-        try:
-            with open(FILE_NAME, 'r') as f:
-                existing = json.load(f)
-        except Exception:
-            pass
-            
-    # Check if we already have today's result in existing
-    updated = False
-    for i, ex in enumerate(existing):
-        if ex.get('date') == homepage_result['date']:
-            existing[i] = homepage_result
-            updated = True
-            break
-            
-    if not updated:
-        # Prepend to list
-        existing.insert(0, homepage_result)
-        
-    # Keep only the last 7 days
-    existing = existing[:7]
+    # Always update the single latest result in result.json
+    with open(FILE_SINGLE, 'w', encoding='utf-8') as f:
+        json.dump(homepage_result, f, indent=4, ensure_ascii=False)
     
-    with open(FILE_NAME, 'w', encoding='utf-8') as f:
-        json.dump(existing, f, indent=4, ensure_ascii=False)
+    # Only update the 7-day history in results.json when the draw is fully finished
+    if is_finished:
+        existing = []
+        if os.path.exists(FILE_HISTORY):
+            try:
+                with open(FILE_HISTORY, 'r') as f:
+                    existing = json.load(f)
+            except Exception:
+                pass
+                
+        # Check if we already have today's result in history
+        updated = False
+        for i, ex in enumerate(existing):
+            if ex.get('date') == homepage_result['date']:
+                existing[i] = homepage_result
+                updated = True
+                break
+                
+        if not updated:
+            # Prepend to list
+            existing.insert(0, homepage_result)
+            
+        # Keep only the last 7 days
+        existing = existing[:7]
         
-    print(f"[{get_ist_now()}] Update complete. {len(existing)} results saved.")
+        with open(FILE_HISTORY, 'w', encoding='utf-8') as f:
+            json.dump(existing, f, indent=4, ensure_ascii=False)
+            
+        print(f"[{get_ist_now()}] 7-day History Update complete.")
+        
     push_to_github()
     return is_finished
 
