@@ -48,7 +48,11 @@ def push_to_github():
         print("No changes to commit.")
 
 def scrape_full_homepage():
-    url = 'https://keralalottery.com.co/'
+    url = os.environ.get('LOTTERY_URL')
+    if not url:
+        print("Error: LOTTERY_URL environment variable is not set!")
+        return None, False
+        
     try:
         response = requests.get(url, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
