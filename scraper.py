@@ -1,5 +1,4 @@
-import schedule
-import time
+
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -12,8 +11,7 @@ import sys
 FILE_SINGLE = "result.json"
 FILE_HISTORY = "results.json"
 
-is_finished_today = False
-last_run_date = None
+
 
 def get_ist_now():
     return datetime.now(pytz.timezone('Asia/Kolkata'))
@@ -175,46 +173,9 @@ def update_results():
     push_to_github()
     return is_finished
 
-def job():
-    global is_finished_today, last_run_date
-    now = get_ist_now()
-    
-    # Reset states on a new day
-    if last_run_date != now.date():
-        is_finished_today = False
-        last_run_date = now.date()
-
-    # Start checking from 15:00 onwards
-    if now.hour >= 15:
-        # If it's past 17:00, we force stop checking to save resources
-        if now.hour >= 17:
-            print(f"[{get_ist_now()}] Force stopping as time exceeded 5 PM.")
-            sys.exit(0)
-            
-        if not is_finished_today:
-            is_finished = update_results()
-            if is_finished:
-                is_finished_today = True
-                print(f"[{get_ist_now()}] Result is fully finished for today. Exiting.")
-                sys.exit(0)
-            else:
-                print(f"[{get_ist_now()}] Result still updating. Will check again in 2 minutes.")
-
 if __name__ == "__main__":
-    # Ensure variables are initialized
-    last_run_date = get_ist_now().date()
-    
-    # Run once on startup to grab current state
-    if get_ist_now().hour >= 15:
-        is_finished_today = update_results()
-        if is_finished_today:
-            print(f"[{get_ist_now()}] Result already fully finished for today. Exiting.")
-            sys.exit(0)
-    
-    # Schedule every 2 minutes
-    schedule.every(2).minutes.do(job)
-    
-    print(f"[{get_ist_now()}] Scheduler started. Will check for updates every 2 mins.")
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    is_finished = update_results()
+    if is_finished:
+        print(f"[{get_ist_now()}] Result fully finished for today.")
+    else:
+        print(f"[{get_ist_now()}] Result still updating.")

@@ -2,8 +2,8 @@ name: Auto Scraper
 
 on:
   schedule:
-    # 09:15 UTC is 14:45 IST (2:45 PM). We start 15 mins early to avoid GitHub's queue delays.
-    - cron: '15 9 * * *'
+    # Run every 5 mins from 14:30 IST to 17:25 IST (9:00 UTC to 11:55 UTC)
+    - cron: '*/5 9-11 * * *'
   workflow_dispatch:
 
 jobs:
