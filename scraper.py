@@ -34,6 +34,9 @@ def format_amount(amount_str):
     return amount_str
 
 def push_to_github():
+    if not os.environ.get('GITHUB_ACTIONS'):
+        print("Running locally; skipping auto git push.")
+        return
     print("Pushing updates to GitHub...")
     # GitHub Actions specific commands
     os.system('git config --global user.name "github-actions[bot]"')
@@ -46,23 +49,26 @@ def push_to_github():
         print("No changes to commit.")
 
 def scrape_full_homepage():
-    url = os.environ.get('LOTTERY_URL')
-    if not url:
-        print("Error: LOTTERY_URL environment variable is not set!")
-        return None, False
+    url = os.environ.get('LOTTERY_URL') or 'https://keralalottery.com.co/'
         
     try:
-        response = requests.get(url, timeout=10)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        date_tag = soup.find('h2', class_='dt')
+        date_tag = soup.find('h2', class_='dt') or soup.find(class_='dt')
         if not date_tag:
             return None, False
         date_text = date_tag.text.strip()
         
         name_tag = soup.find('div', class_='heading_live')
-        if name_tag and name_tag.find('h2'):
-            raw_name = name_tag.find('h2').text.strip()
+        if name_tag and name_tag.find(['h2', 'h1']):
+            raw_name = name_tag.find(['h2', 'h1']).text.strip()
+            name = raw_name.split(' Lottery')[0].strip()
+        elif soup.find('h1'):
+            raw_name = soup.find('h1').text.strip()
             name = raw_name.split(' Lottery')[0].strip()
         else:
             name = "Unknown"
@@ -71,54 +77,102 @@ def scrape_full_homepage():
         is_finished = True
         
         # Check for typing indicator in the whole page
-        if soup.find(class_='typing-indicator'):
+        if soup.find(class_='typing-indicator') or soup.find(class_='typing-cell'):
             is_finished = False
             
-        for h2 in soup.find_all('h2'):
-            text = h2.get_text(strip=True)
-            if "Prize" in text:
-                h3 = h2.find_next_sibling('h3')
+        cards = soup.find_all('div', class_='prize-card')
+        if cards:
+            for card in cards:
+                head = card.find('div', class_='prize-card__head') or card
+                h2 = head.find('h2')
+                if not h2 or "Prize" not in h2.get_text():
+                    continue
+                prize_name = h2.get_text(strip=True)
+                h3 = head.find('h3')
                 amount = h3.get_text(strip=True) if h3 else ""
                 amount = format_amount(amount)
                 
                 numbers = []
-                curr = h2.next_sibling
-                while curr and getattr(curr, 'name', '') != 'h2':
-                    if curr.name == 'p':
-                        if curr.get('class') and 'cons-numbers' in curr.get('class'):
-                            spans = curr.find_all('span', class_='num')
-                            for span in spans:
-                                span_text = span.get_text(strip=True)
-                                if span_text:
-                                    numbers.append(span_text)
-                                    if '---' in span_text:
-                                        is_finished = False
-                        elif curr.get('class') and 'agency-line' in curr.get('class'):
-                            pass # Ignore agency line
-                        else:
-                            t = curr.get_text(strip=True)
-                            if t:
-                                numbers.append(t)
-                                if '---' in t:
-                                    is_finished = False
-                    elif curr.name == 'div':
-                        if curr.get('class') and 'cons-grid' in curr.get('class'):
-                            cells = curr.find_all('div', class_='cons-cell')
-                            for cell in cells:
-                                cell_text = cell.get_text(strip=True)
-                                if cell_text:
-                                    numbers.append(cell_text)
-                                    if '---' in cell_text:
-                                        is_finished = False
-                    curr = curr.next_sibling
-                    
-                prizes[text] = {
+                body = card.find('div', class_='prize-card__body') or card
+                
+                # Ticket numbers are inside buttons with class 'kl-box'
+                btn_elements = body.find_all('button', class_='kl-box')
+                if not btn_elements:
+                    btn_elements = body.find_all('button')
+                if not btn_elements:
+                    # Fallback for leaf elements if buttons are not used
+                    btn_elements = [
+                        el for el in body.find_all(['span', 'div', 'p'])
+                        if not el.find(['span', 'div', 'p']) and any(c in el.get('class', []) for c in ['kl-box', 'num', 'cons-cell'])
+                    ]
+                
+                for elem in btn_elements:
+                    if elem.find_parent(class_='agency-wrap') or (elem.get('class') and 'agency-line' in elem.get('class')):
+                        continue
+                    num_text = elem.get('data-copy') or elem.get_text(strip=True)
+                    num_text = num_text.strip()
+                    if num_text and num_text not in numbers:
+                        numbers.append(num_text)
+                        if '---' in num_text:
+                            is_finished = False
+                
+                prizes[prize_name] = {
                     "amount": amount,
                     "numbers": numbers
                 }
                 
                 if not numbers:
                     is_finished = False
+        else:
+            # Fallback to legacy layout
+            for h2 in soup.find_all('h2'):
+                text = h2.get_text(strip=True)
+                if "Prize" in text:
+                    h3 = h2.find_next_sibling('h3')
+                    amount = h3.get_text(strip=True) if h3 else ""
+                    amount = format_amount(amount)
+                    
+                    numbers = []
+                    curr = h2.next_sibling
+                    while curr and getattr(curr, 'name', '') != 'h2':
+                        if curr.name == 'p':
+                            if curr.get('class') and 'cons-numbers' in curr.get('class'):
+                                spans = curr.find_all('span', class_='num')
+                                for span in spans:
+                                    span_text = span.get_text(strip=True)
+                                    if span_text:
+                                        numbers.append(span_text)
+                                        if '---' in span_text:
+                                            is_finished = False
+                            elif curr.get('class') and 'agency-line' in curr.get('class'):
+                                pass # Ignore agency line
+                            else:
+                                t = curr.get_text(strip=True)
+                                if t:
+                                    numbers.append(t)
+                                    if '---' in t:
+                                        is_finished = False
+                        elif curr.name == 'div':
+                            if curr.get('class') and 'cons-grid' in curr.get('class'):
+                                cells = curr.find_all('div', class_='cons-cell')
+                                for cell in cells:
+                                    cell_text = cell.get_text(strip=True)
+                                    if cell_text:
+                                        numbers.append(cell_text)
+                                        if '---' in cell_text:
+                                            is_finished = False
+                        curr = curr.next_sibling
+                        
+                    prizes[text] = {
+                        "amount": amount,
+                        "numbers": numbers
+                    }
+                    
+                    if not numbers:
+                        is_finished = False
+                    
+        if not prizes:
+            is_finished = False
                 
         return {
             "date": date_text,
